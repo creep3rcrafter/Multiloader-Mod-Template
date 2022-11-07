@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "templatemod",
+  "version": "${version}",
+  "name": "TemplateMod (Fabric)",
+  "description": "",
+  "authors": [
+    "Creep3rCrafter"
+  ],
+  "contact": {
+    "homepage": "",
+    "sources": ""
+  },
+  "license": "All Rights Reserved",
+  "icon": "assets/templatemod/logo.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "net.creep3rcrafter.templatemod.fabric.TemplateModFabric"
+    ]
+  },
+  "mixins": [
+    "templatemod.mixins.json",
+    "templatemod-common.mixins.json"
+  ],
+  "depends": {
+    "fabric": "*",
+    "minecraft": ">=1.19.2",
+    "architectury": ">=6.2.43"
+  }
+}

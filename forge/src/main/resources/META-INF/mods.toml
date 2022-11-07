@@ -1,0 +1,34 @@
+modLoader = "javafml"
+loaderVersion = "[43,)"
+issueTrackerURL = "https://github.com/creep3rcrafter//issues"
+license = "All Rights Reserved"
+
+[[mods]]
+modId = "templatemod"
+version = "${version}"
+displayName = "TemplateMod (Forge)"
+displayURL = ""
+authors = "Creep3rCrafter"
+description = ''''''
+logoFile = "logo.png"
+
+[[dependencies.templatemod]]
+modId = "forge"
+mandatory = true
+versionRange = "[43,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.templatemod]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.19.2,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.templatemod]]
+modId = "architectury"
+mandatory = true
+versionRange = "[6.2.43,)"
+ordering = "AFTER"
+side = "BOTH"
