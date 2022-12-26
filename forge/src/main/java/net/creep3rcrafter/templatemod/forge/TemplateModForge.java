@@ -20,6 +20,6 @@ public class TemplateModForge {
 
     private void commonSetupEvent(FMLCommonSetupEvent event){
         IEventBus eventBus = FMLJavaModLoadingContext.get().getModEventBus();
-        //eventBus.register(new BrewingRecipes()); Example
+        //eventBus.register(new BrewingRecipes()); //Example
     }
 }

@@ -2,6 +2,7 @@ package net.creep3rcrafter.templatemod.utils;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
@@ -15,59 +16,72 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class Utils {
-    public static void lightning(LivingEntity livingEntity, ServerLevel serverWorld, int amplifier) {
-        lightning(livingEntity, serverWorld);
-        if (!livingEntity.isSpectator() && serverWorld != null) {
+
+    public static void lightning(BlockPos blockPos, ServerLevel level){
+        LightningBolt LightningBolt = EntityType.LIGHTNING_BOLT.create(level);
+        LightningBolt.moveTo(Vec3.atBottomCenterOf(blockPos));
+        level.addFreshEntity(LightningBolt);
+    }
+    public static void lightning(BlockPos blockPos, ServerLevel level, LivingEntity livingEntity){
+        LightningBolt LightningBolt = EntityType.LIGHTNING_BOLT.create(level);
+        LightningBolt.moveTo(Vec3.atBottomCenterOf(blockPos));
+        LightningBolt.setCause(livingEntity instanceof ServerPlayer ? (ServerPlayer) livingEntity : null);
+        level.addFreshEntity(LightningBolt);
+    }
+    public static void lightning(LivingEntity livingEntity, ServerLevel level) {
+        if (!livingEntity.isSpectator() && level != null) {
+            BlockPos entityPos = livingEntity.blockPosition();
+            lightning(entityPos, level, livingEntity);
+        }
+    }
+    public static void lightning(LivingEntity livingEntity, ServerLevel level, int amplifier) {
+        lightning(livingEntity, level);
+        if (!livingEntity.isSpectator() && level != null) {
             for (int i = 0; i < amplifier; i++) {
                 Random random = new Random();
                 BlockPos entityPos = livingEntity.blockPosition();
                 BlockPos blockPos = entityPos.offset(random.nextInt(amplifier) - (amplifier / 2), random.nextInt(amplifier) - (amplifier / 2), random.nextInt(amplifier) - (amplifier / 2));
-                LightningBolt lightningbolt = EntityType.LIGHTNING_BOLT.create(serverWorld);
-                lightningbolt.moveTo(Vec3.atBottomCenterOf(blockPos));
-                lightningbolt.setCause(livingEntity instanceof ServerPlayer ? (ServerPlayer) livingEntity : null);
-                serverWorld.addFreshEntity(lightningbolt);
+                lightning(blockPos, level, livingEntity);
             }
         }
-    }
-
-    public static void lightning(LivingEntity livingEntity, ServerLevel level) {
-        if (!livingEntity.isSpectator() && level != null) {
-            BlockPos entityPos = livingEntity.blockPosition();
-            LightningBolt LightningBolt = EntityType.LIGHTNING_BOLT.create(level);
-            LightningBolt.moveTo(Vec3.atBottomCenterOf(entityPos));
-            LightningBolt.setCause(livingEntity instanceof ServerPlayer ? (ServerPlayer) livingEntity : null);
-            level.addFreshEntity(LightningBolt);
-        }
-    }
-
-    public static void explode(Level level, BlockPos blockPos) {
-        explode(level, blockPos, 4f);
-    }
-
-    public static void explode(Level level, BlockPos blockPos, float radius) {
-        explode(level, blockPos, radius, false);
-    }
-
-    public static void explode(Level level, BlockPos blockPos, float radius, boolean fire) {
-        level.explode(null, blockPos.getX(), blockPos.getY(), blockPos.getZ(), radius, fire, Explosion.BlockInteraction.BREAK);
     }
 
     public static void explode(ServerLevel level, BlockPos blockPos) {
         explode(level, blockPos, 4f);
     }
-
     public static void explode(ServerLevel level, BlockPos blockPos, float radius) {
         explode(level, blockPos, radius, false);
     }
-
     public static void explode(ServerLevel level, BlockPos blockPos, float radius, boolean fire) {
         level.explode(null, blockPos.getX(), blockPos.getY(), blockPos.getZ(), radius, fire, Explosion.BlockInteraction.BREAK);
+    }
+
+    public boolean hasServer(Level level){
+        return level.getServer() != null;
+    }
+    public boolean hasServer(LivingEntity livingEntity){
+        return livingEntity.getServer() != null;
+    }
+
+    public boolean tickTime(ServerLevel level, int ticks){
+        return level.getServer().getTickCount() % ticks == 0;
+    }
+    public boolean tickTime(ServerPlayer serverPlayer, int ticks){
+        return serverPlayer.getLevel().getServer().getTickCount() % ticks == 0;
+    }
+    public boolean tickTime(MinecraftServer server, int ticks){
+        return server.getTickCount() % ticks == 0;
+    }
+    public boolean tickTime(LivingEntity livingEntity, int ticks){
+        if (hasServer(livingEntity)){
+            return tickTime(livingEntity.getServer(), ticks);
+        }
+        else{
+            return false;
+        }
     }
 
     public static int cropAgeToIndex(int age) {
@@ -98,7 +112,7 @@ public class Utils {
         return (int) Math.sqrt((deltaX * deltaX) + (deltaY * deltaY) + (deltaZ * deltaZ));
     }
 
-    public List<BlockPos> getNearbyBlocks(LivingEntity livingEntity, int radius) {
+    public List<BlockPos> getNearbyBlockPostions(LivingEntity livingEntity, int radius) {
         List<BlockPos> blockPositions = new ArrayList<BlockPos>();
         for (int x = livingEntity.blockPosition().getX() - radius; x <= livingEntity.blockPosition().getX() + radius; x++) {
             for (int y = livingEntity.blockPosition().getY() - radius; y <= livingEntity.blockPosition().getY() + radius; y++) {
@@ -126,54 +140,4 @@ public class Utils {
             });
         }
     }
-
-    public static <C extends Container, T extends Recipe<C>> List<Item> recipesContainsItems(MinecraftServer server, RecipeType<T> recipeType, List<Item> containsList) {
-        List<Item> results = new ArrayList<Item>();
-        if (recipeType == RecipeType.SMITHING) {
-            server.getRecipeManager().getAllRecipesFor((RecipeType.SMITHING)).forEach(recipe -> {
-                for (Item item : containsList) {
-                    if (recipe.base.test(new ItemStack(item))) {
-                        results.add(recipe.getResultItem().getItem());
-                    }
-                    if (recipe.addition.test(new ItemStack(item))) {
-                        results.add(recipe.getResultItem().getItem());
-                    }
-                }
-            });
-        } else {
-            server.getRecipeManager().getAllRecipesFor(recipeType).forEach(recipe -> {
-                recipe.getIngredients().forEach(ingredient -> {
-                    for (Item item : containsList) {
-                        if (ingredient.test(new ItemStack(item))) {
-                            results.add(recipe.getResultItem().getItem());
-                        }
-                    }
-                });
-            });
-        }
-        List<Item> resultsWithoutDuplicates = new ArrayList<Item>(new HashSet<>(results));
-        return resultsWithoutDuplicates;
-    }
-
-    /*
-                    server.getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING).forEach(craftingRecipe -> {
-                        craftingRecipe.getIngredients().forEach(ingredient -> {
-                            if (ingredient.test(new ItemStack(Items.IRON_INGOT))){
-                                System.out.println(craftingRecipe.getResultItem().getItem().toString()+": Has Iron Ingot!");
-                            }
-                            if (ingredient.test(new ItemStack(Items.IRON_NUGGET))){
-                                System.out.println(craftingRecipe.getResultItem().getItem().toString()+": Has Iron Nugget!");
-                            }
-                            if (ingredient.test(new ItemStack(Items.NETHERITE_SCRAP))){
-                                System.out.println(craftingRecipe.getResultItem().getItem().toString()+": Has Netherite Scrap!");
-                            }
-                            if (ingredient.test(new ItemStack(Items.NETHERITE_INGOT))){
-                                System.out.println(craftingRecipe.getResultItem().getItem().toString()+": Has Netherite Ingot!");
-                            }
-                            if (ingredient.test(new ItemStack(Items.COPPER_INGOT))){
-                                System.out.println(craftingRecipe.getResultItem().getItem().toString()+": Has Copper Ingot!");
-                            }
-                        });
-                    });
-     */
 }
